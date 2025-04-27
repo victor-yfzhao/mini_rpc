@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+message CalcRequest {
+  string method = 1;
+  repeated int32 params = 2;
+}
+
+message CalcResponse {
+  int32 result = 1;
+  string error = 2;
+}
