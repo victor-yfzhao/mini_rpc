@@ -6,7 +6,7 @@
 # C extensions
 *.so
 
-grpc_demo/__pycache__/
+demo/grpc_demo/__pycache__/
 
 
 # Distribution / packaging
@@ -175,3 +175,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.idea/
