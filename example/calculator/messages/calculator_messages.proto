@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package calculator_message;
+
+message CalculatorRequest{
+  double operand1 = 1;
+  double operand2 = 2;
+}
+
+message CalculatorResponse{
+  double result = 1;
+}

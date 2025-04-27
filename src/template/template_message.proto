@@ -4,12 +4,12 @@ package mini_rpc_message;
 
 import "google/protobuf/any.proto";
 
-message mini_rpc_request{
+message MiniRpcRequest{
   string method = 1;
   google.protobuf.Any args = 2;
 }
 
-message mini_rpc_response{
+message MiniRpcResponse{
   int32 status = 1;
   string info = 2;
   google.protobuf.Any data = 3;
