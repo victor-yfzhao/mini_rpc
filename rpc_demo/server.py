@@ -39,20 +39,19 @@ def start_server(host="127.0.0.1", port=50051):
         client_socket, addr = server.accept()
         print(f"Connection from {addr}")
 
-        # 先收消息长度（4字节，int类型）
+
         length_bytes = client_socket.recv(4)
         if not length_bytes:
             continue
         message_length = int.from_bytes(length_bytes, byteorder='big')
 
-        # 再收真正的数据
         data = client_socket.recv(message_length)
         if not data:
             continue
 
         response_data = handle_request(data)
 
-        # 回传，先发送长度
+
         client_socket.send(len(response_data).to_bytes(4, byteorder='big'))
         client_socket.send(response_data)
 
