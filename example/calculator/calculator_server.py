@@ -1,17 +1,28 @@
-from Tools.i18n.makelocalealias import parse_glibc_supported
-
+# from Tools.i18n.makelocalealias import parse_glibc_supported
+from src.service_announcer import ServiceAnnouncer
 from src import MiniRpcServer
 from example.calculator.messages import calculator_messages_pb2
 
-
 class CalculatorServer(MiniRpcServer):
-    def __init__(self, host, port):
+    def __init__(self, host, port, service_name="calculator-service"):
         super().__init__(host, port)
 
         self.regiter_method("+", self.add)
         self.regiter_method("-", self.substract)
         self.regiter_method("*", self.multiply)
         self.regiter_method("/", self.divide)
+
+        self.announcer = ServiceAnnouncer(service_name=service_name, service_port=port, broadcast_port=9999)
+
+    def start(self):
+        super().start()
+        self.announcer.start()
+        print("[CalculatorServer] Announcer started.")
+
+    def stop(self):
+        super().stop()
+        self.announcer.stop()
+        print("[CalculatorServer] Announcer stopped.")
 
     def call_method(self, method_name, args):
         method = self.methods.get(method_name)
