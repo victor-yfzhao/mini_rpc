@@ -1,11 +1,9 @@
-from calculator import CalculatorClient
-
+from example.calculator.calculator_client import CalculatorClient
 
 def launch_clients():
-    client = CalculatorClient('127.0.0.1', 50000)
+    client = CalculatorClient('calculator-service')
 
     client.test()
-
 
 if __name__ == '__main__':
     launch_clients()

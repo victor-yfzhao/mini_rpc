@@ -1,14 +1,17 @@
 import time
-
-from calculator import CalculatorServer
+from example.calculator.calculator_server import CalculatorServer
 
 def launch_server():
-    server = CalculatorServer("127.0.0.1", 50000)
+
+    server = CalculatorServer(host="0.0.0.0", port=50000, service_name="calculator-service")
     server.start()
 
-    time.sleep(10)
-    server.stop()
-
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopping server...")
+        server.stop()
 
 if __name__ == "__main__":
     launch_server()
