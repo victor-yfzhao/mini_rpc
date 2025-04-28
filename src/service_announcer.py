@@ -20,10 +20,10 @@ class ServiceAnnouncer:
         while self.running:
             try:
                 sock.sendto(message, (self.broadcast_ip, self.broadcast_port))
-                print(f"[Announce] Sent: {message.decode()}")
+                # print(f"[Info][Announce] Sent: {message.decode()}")
                 time.sleep(self.interval)
             except Exception as e:
-                print(f"[Announce] Error: {e}")
+                print(f"[Info][Announce] Error: {e}")
                 break
 
         sock.close()

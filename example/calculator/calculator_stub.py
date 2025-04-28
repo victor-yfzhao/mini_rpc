@@ -2,8 +2,8 @@ from src.client_stub import MiniRpcStub
 from example.calculator.messages import calculator_messages_pb2
 
 class CalculatorStub(MiniRpcStub):
-    def __init__(self, ip, port):
-        super().__init__(ip, port)
+    def __init__(self, service_name="calculator-service", listen_port=9999):
+        super().__init__(service_name, listen_port)
 
     def send_calculation_request(self, method, operand1, operand2):
         request = calculator_messages_pb2.CalculatorRequest()
@@ -45,3 +45,4 @@ class CalculatorStub(MiniRpcStub):
             print(f"{operand1} / {operand2} = {result}")
         except Exception as e:
             print(e)
+

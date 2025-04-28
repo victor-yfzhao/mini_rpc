@@ -2,7 +2,7 @@ import socket
 import struct
 import threading
 from abc import ABC, abstractmethod
-
+from src.service_announcer import ServiceAnnouncer
 from src.template import template_message_pb2
 
 
@@ -22,7 +22,7 @@ def send_msg(sock, message_obj):
 
 
 class MiniRpcServer(ABC):
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, service_name=None):
         self.ip = ip
         self.port = port
 
@@ -33,6 +33,10 @@ class MiniRpcServer(ABC):
 
         self.status = False
 
+        if service_name:
+            self.announcer = ServiceAnnouncer(service_name=service_name, service_port=port, broadcast_port=9999)
+        else:
+            self.announcer = None
     def regiter_method(self, method_name, method):
         self.methods[method_name] = method
 
@@ -40,18 +44,28 @@ class MiniRpcServer(ABC):
     def call_method(self, method_name, args):
         raise NotImplementedError
 
-    def handle_request(self, raw_request):
-        request = template_message_pb2.MiniRpcRequest()
-        request.ParseFromString(raw_request)
-        print(request)
-
-        method = request.method
-        args = request.args
-
+    def handle_request(self, conn, addr):
+        print(f"[Info][Server] Starting new thread to haddle request from {addr}")
         response = template_message_pb2.MiniRpcResponse()
 
         try:
+            raw_msg_len = recv_all(conn, 4)
+            if not raw_msg_len:
+                raise Exception(f"Unknown request from {addr}: Invalid length")
+
+            msg_len = struct.unpack(">I", raw_msg_len)[0]
+            data = recv_all(conn, msg_len)
+            if not data:
+                raise Exception(f"Unknown request from {addr}: Invalid data")
+
+            request = template_message_pb2.MiniRpcRequest()
+            request.ParseFromString(data)
+
+            method = request.method
+            args = request.args
+
             result = self.call_method(method, args)
+
             response.status = 1
             response.info = "success"
             response.data.Pack(result)
@@ -59,8 +73,9 @@ class MiniRpcServer(ABC):
             response.status = -1
             response.info = str(e)
         finally:
-            print(response)
-            return response
+            send_msg(conn, response)
+            conn.close()
+
 
     def _serve(self):
         self.socket_listener.listen()
@@ -68,30 +83,11 @@ class MiniRpcServer(ABC):
 
         while self.status:
             try:
-                conn, address = self.socket_listener.accept()
-            except OSError:
-                # Socket已经被关闭，退出循环
-                break
-
-            try:
-                raw_msg_len = recv_all(conn, 4)
-                if not raw_msg_len:
-                    conn.close()
-                    continue
-
-                msg_len = struct.unpack(">I", raw_msg_len)[0]
-                data = recv_all(conn, msg_len)
-                if not data:
-                    conn.close()
-                    continue
-
-                response = self.handle_request(data)
-
-                send_msg(conn, response)
+                conn, addr = self.socket_listener.accept()
+                client_thread = threading.Thread(target=self.handle_request, args=(conn, addr))
+                client_thread.start()
             except Exception as e:
-                print(f"Error handling request: {e}")
-            finally:
-                conn.close()
+                print(f"[Error][Server] {e}")
 
         print("Server loop exited.")
 
@@ -103,15 +99,21 @@ class MiniRpcServer(ABC):
         self.status = True
         self._server_thread = threading.Thread(target=self._serve, daemon=True)
         self._server_thread.start()
-        print("Server started.")
+        if self.announcer:
+            self.announcer.start()
+            print(f"[{self.service_name}] Announcer started.")
+        print("[Info][Server] Server started.")
 
     def stop(self):
         if not self.status:
-            print("Server already stopped")
+            print("[Info][Server] Server already stopped")
             return
 
         self.status = False
         self.socket_listener.close()
         if self._server_thread:
             self._server_thread.join()
-        print("Server stopped.")
+        if self.announcer:
+            self.announcer.stop()
+            print(f"[{self.service_name}] Announcer stopped.")
+        print("[Info][Server] Server stopped.")

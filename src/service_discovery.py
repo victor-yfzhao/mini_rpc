@@ -6,43 +6,46 @@ class ServiceDiscovery:
     def __init__(self, listen_port=9999, timeout=15):
         self.listen_port = listen_port
         self.timeout = timeout
-        self.services = {}  # { (ip, service_name): last_seen_time }
+        self.services = {}
         self.running = False
 
     def _listen_loop(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('', self.listen_port))
-
+        print("[Info][Discovery] Listening on port", self.listen_port)
         sock.settimeout(1)
 
         while self.running:
             try:
                 data, addr = sock.recvfrom(1024)
                 message = data.decode()
+                print(f"[Info][Discovery] Received message: {message} from {addr}")
                 if message.startswith("SERVICE_ANNOUNCE:"):
                     _, service_name, service_port = message.strip().split(":")
                     key = (addr[0], service_name)
                     self.services[key] = (int(service_port), time.time())
-                    print(f"[Discovery] Found service: {key} on port {service_port}")
+                    print(f"[Info][Discovery] Found service: {key} on port {service_port}")
             except socket.timeout:
                 pass
             except Exception as e:
-                print(f"[Discovery] Error: {e}")
+                print(f"[Error][Discovery] Error: {e}")
                 break
 
             self._remove_expired_services()
 
         sock.close()
 
+
     def _remove_expired_services(self):
         now = time.time()
         expired = [key for key, (_, last_seen) in self.services.items() if now - last_seen > self.timeout]
         for key in expired:
-            print(f"[Discovery] Service {key} expired")
+            print(f"[Info] Service {key} expired")
             del self.services[key]
 
     def start(self):
+        print(self.services)
         if not self.running:
             self.running = True
             self.thread = threading.Thread(target=self._listen_loop, daemon=True)
